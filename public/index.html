@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>H2O Site Monitor</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      max-width: 480px;
+      margin: 2rem auto;
+      padding: 0 1rem;
+      color: #1a1a1a;
+      background: #f5f7fa;
+    }
+    h1 { font-size: 1.25rem; margin: 0 0 0.25rem; }
+    .url { color: #555; font-size: 0.85rem; word-break: break-all; margin-bottom: 1.5rem; }
+    .card {
+      background: #fff;
+      border-radius: 12px;
+      padding: 1.25rem;
+      box-shadow: 0 1px 4px rgba(0,0,0,.08);
+    }
+    .status-row {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-bottom: 1rem;
+    }
+    .dot {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: #ccc;
+      flex-shrink: 0;
+    }
+    .dot.up { background: #22c55e; }
+    .dot.down { background: #ef4444; }
+    .dot.unknown { background: #f59e0b; }
+    .status-label { font-size: 1.1rem; font-weight: 600; }
+    .meta { font-size: 0.8rem; color: #666; line-height: 1.5; }
+    .actions { display: flex; gap: 0.5rem; margin-top: 1.25rem; flex-wrap: wrap; }
+    button {
+      flex: 1;
+      min-width: 120px;
+      padding: 0.6rem 1rem;
+      border: none;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      cursor: pointer;
+      background: #2563eb;
+      color: #fff;
+    }
+    button:hover { background: #1d4ed8; }
+    button.secondary { background: #e5e7eb; color: #1a1a1a; }
+    button.secondary:hover { background: #d1d5db; }
+    button:disabled { opacity: 0.6; cursor: not-allowed; }
+    .toast {
+      margin-top: 1rem;
+      padding: 0.6rem 0.75rem;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      display: none;
+    }
+    .toast.ok { display: block; background: #dcfce7; color: #166534; }
+    .toast.err { display: block; background: #fee2e2; color: #991b1b; }
+  </style>
+</head>
+<body>
+  <h1>H2O Site Monitor</h1>
+  <p class="url" id="site-url">—</p>
+  <p class="meta" style="margin-top:-1rem;margin-bottom:1rem;">Runs on Vercel · checks every 30 min via cron</p>
+
+  <div class="card">
+    <div class="status-row">
+      <div class="dot unknown" id="dot"></div>
+      <span class="status-label" id="status-text">Checking…</span>
+    </div>
+    <p class="meta" id="meta"></p>
+    <div class="actions">
+      <button type="button" id="check-btn">Check now</button>
+      <button type="button" id="test-btn" class="secondary">Test notification</button>
+    </div>
+    <p class="toast" id="toast"></p>
+  </div>
+
+  <script>
+    const dot = document.getElementById("dot");
+    const statusText = document.getElementById("status-text");
+    const meta = document.getElementById("meta");
+    const toast = document.getElementById("toast");
+    const checkBtn = document.getElementById("check-btn");
+    const testBtn = document.getElementById("test-btn");
+
+    function showToast(msg, ok) {
+      toast.textContent = msg;
+      toast.className = "toast " + (ok ? "ok" : "err");
+      setTimeout(() => { toast.className = "toast"; }, 4000);
+    }
+
+    function render(data) {
+      document.getElementById("site-url").textContent = data.url;
+      dot.className = "dot " + (data.status || "unknown");
+      statusText.textContent =
+        data.status === "up" ? "Online" :
+        data.status === "down" ? "Offline" : "Unknown";
+      meta.innerHTML =
+        `Checks every ${data.intervalMinutes} minutes · ntfy.sh/${data.ntfyTopic}<br>` +
+        (data.lastCheck ? `Last check: ${new Date(data.lastCheck).toLocaleString()}` : "No check yet") +
+        (data.lastStatusCode ? `<br>HTTP ${data.lastStatusCode}` : "") +
+        (data.lastError ? `<br>Error: ${data.lastError}` : "");
+    }
+
+    async function loadStatus() {
+      const res = await fetch("/api/status");
+      render(await res.json());
+    }
+
+    checkBtn.addEventListener("click", async () => {
+      checkBtn.disabled = true;
+      try {
+        const res = await fetch("/api/check", { method: "POST" });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error);
+        render(data);
+        showToast("Check complete.", true);
+      } catch (e) {
+        showToast(e.message, false);
+      } finally {
+        checkBtn.disabled = false;
+      }
+    });
+
+    testBtn.addEventListener("click", async () => {
+      testBtn.disabled = true;
+      try {
+        const res = await fetch("/api/test-notify", { method: "POST" });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error);
+        showToast(`Sent to ntfy.sh/${data.topic || "h20-alert-20111"}`, true);
+      } catch (e) {
+        showToast(e.message, false);
+      } finally {
+        testBtn.disabled = false;
+      }
+    });
+
+    loadStatus();
+    setInterval(loadStatus, 30000);
+  </script>
+</body>
+</html>
