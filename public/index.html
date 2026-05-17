@@ -106,7 +106,7 @@
         data.status === "up" ? "Online" :
         data.status === "down" ? "Offline" : "Unknown";
       meta.innerHTML =
-        `Checks every ${data.intervalMinutes} min · alerts max once per ${data.intervalMinutes} min · ntfy.sh/${data.ntfyTopic}<br>` +
+        `Checks every ${data.intervalMinutes} min · alerts when site comes online · ntfy.sh/${data.ntfyTopic}<br>` +
         (data.lastCheck ? `Last check: ${new Date(data.lastCheck).toLocaleString()}` : "No check yet") +
         (data.lastStatusCode ? `<br>HTTP ${data.lastStatusCode}` : "") +
         (data.lastError ? `<br>Error: ${data.lastError}` : "");
@@ -141,7 +141,8 @@
         render(data);
         const label = data.status === "up" ? "Online" : data.status === "down" ? "Offline" : "Unknown";
         const http = data.lastStatusCode ? ` (HTTP ${data.lastStatusCode})` : "";
-        showToast(`Site is ${label}${http} — notification sent`, data.status === "up");
+        const sent = data.notified ? " — notification sent" : " — no notification (offline)";
+        showToast(`Site is ${label}${http}${sent}`, data.status === "up");
       } catch (e) {
         showToast(e.message, false);
       } finally {
