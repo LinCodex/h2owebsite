@@ -14,7 +14,7 @@ module.exports = async (req, res) => {
   }
 
   try {
-    const state = await runCheck({ notifyOnChange: true });
+    const state = await runCheck({ notify: true });
     return res.status(200).json({ ok: true, ...state });
   } catch (err) {
     return res.status(500).json({ error: err.message });

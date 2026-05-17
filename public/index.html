@@ -80,7 +80,7 @@
     <p class="meta" id="meta"></p>
     <div class="actions">
       <button type="button" id="check-btn">Check now</button>
-      <button type="button" id="test-btn" class="secondary">Test notification</button>
+      <button type="button" id="test-btn" class="secondary">Test check</button>
     </div>
     <p class="toast" id="toast"></p>
   </div>
@@ -106,7 +106,7 @@
         data.status === "up" ? "Online" :
         data.status === "down" ? "Offline" : "Unknown";
       meta.innerHTML =
-        `Checks every ${data.intervalMinutes} minutes · ntfy.sh/${data.ntfyTopic}<br>` +
+        `Checks every ${data.intervalMinutes} min · alerts max once per ${data.intervalMinutes} min · ntfy.sh/${data.ntfyTopic}<br>` +
         (data.lastCheck ? `Last check: ${new Date(data.lastCheck).toLocaleString()}` : "No check yet") +
         (data.lastStatusCode ? `<br>HTTP ${data.lastStatusCode}` : "") +
         (data.lastError ? `<br>Error: ${data.lastError}` : "");
@@ -138,7 +138,10 @@
         const res = await fetch("/api/test-notify", { method: "POST" });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error);
-        showToast(`Sent to ntfy.sh/${data.topic || "h20-alert-20111"}`, true);
+        render(data);
+        const label = data.status === "up" ? "Online" : data.status === "down" ? "Offline" : "Unknown";
+        const http = data.lastStatusCode ? ` (HTTP ${data.lastStatusCode})` : "";
+        showToast(`Site is ${label}${http}`, data.status === "up");
       } catch (e) {
         showToast(e.message, false);
       } finally {
