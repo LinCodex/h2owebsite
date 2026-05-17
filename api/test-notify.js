@@ -1,4 +1,4 @@
-const { runCheck } = require("../lib/monitor");
+const { runTestCheck } = require("../lib/monitor");
 
 module.exports = async (req, res) => {
   if (req.method !== "POST") {
@@ -6,7 +6,7 @@ module.exports = async (req, res) => {
   }
 
   try {
-    const state = await runCheck({ notify: false });
+    const state = await runTestCheck();
     return res.status(200).json(state);
   } catch (err) {
     return res.status(500).json({ error: err.message });

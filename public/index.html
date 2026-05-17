@@ -141,7 +141,7 @@
         render(data);
         const label = data.status === "up" ? "Online" : data.status === "down" ? "Offline" : "Unknown";
         const http = data.lastStatusCode ? ` (HTTP ${data.lastStatusCode})` : "";
-        showToast(`Site is ${label}${http}`, data.status === "up");
+        showToast(`Site is ${label}${http} — notification sent`, data.status === "up");
       } catch (e) {
         showToast(e.message, false);
       } finally {
